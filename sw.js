@@ -1,6 +1,6 @@
-const CACHE_NAME = 'dosya-takip-v1';
+const CACHE_NAME = 'dosya-takip-v2';
 const ASSETS = [
-  './dosya-takip.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

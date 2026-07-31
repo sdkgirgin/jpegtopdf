@@ -2,7 +2,7 @@
   "name": "Startkey Platin - Dosya Takip",
   "short_name": "Dosya Takip",
   "description": "Gayrimenkul işlemleri için dosya ve süreç takip uygulaması",
-  "start_url": "./dosya-takip.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
