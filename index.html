@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kimlik Fotokopisi</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#e6e9ee;--panel:#f7f8fa;--ink:#18212d;--mute:#5d6877;--line:#c9cfd8;--accent:#1d4ed8;--accent-ink:#fff;--paper:#fff;--shadow:0 1px 2px rgba(20,30,50,.12),0 8px 24px rgba(20,30,50,.12);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171f;--panel:#1b222d;--ink:#e8ecf2;--mute:#9aa5b5;--line:#2f3a4a;--accent:#6c93ff;--accent-ink:#0d1320;--paper:#fafafa;--shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#12171f;--panel:#1b222d;--ink:#e8ecf2;--mute:#9aa5b5;--line:#2f3a4a;--accent:#6c93ff;--accent-ink:#0d1320;--paper:#fafafa;--shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "IBM Plex Sans","Segoe UI",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 4px;font-weight:600}
+.sub{margin:0 0 20px;color:var(--mute);max-width:60ch}
+.grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:820px){.grid{grid-template-columns:1fr 340px;align-items:start}}
+.slots{display:grid;gap:16px}
+.slot{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.slot h2{font-size:1rem;margin:0 0 10px;font-weight:600}
+.stage{position:relative;aspect-ratio:85.6/54;width:100%;max-width:440px;border-radius:6px;overflow:hidden;background:var(--paper);border:1px dashed var(--line);touch-action:none}
+.stage canvas{display:block;width:100%;height:100%}
+.stage.has{border-style:solid;cursor:grab}
+.pick{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;color:#44505f;background:transparent;border:0;font:inherit;cursor:pointer}
+.stage.has .pick{display:none}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.row label{font-size:.875rem;color:var(--mute)}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--accent)}
+button{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:14px}
+fieldset{border:0;margin:0;padding:0}
+legend{font-size:.875rem;color:var(--mute);padding:0;margin-bottom:6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg label{flex:1;position:relative}
+.seg input{position:absolute;opacity:0;inset:0;margin:0}
+.seg span{display:block;text-align:center;padding:7px 8px;font-size:.9rem;cursor:pointer}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink)}
+.page{width:100%;max-width:300px;margin:0 auto;aspect-ratio:210/297;background:var(--paper);box-shadow:var(--shadow)}
+.page canvas{display:block;width:100%;height:100%}
+.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:11px 14px}
+#msg{min-height:1.4em;margin:0;font-size:.875rem;color:var(--mute)}
+.note{font-size:.8125rem;color:var(--mute);margin:0}
+</style>
+</head>
+<body>
+<main>
+<h1>Kimlik fotokopisi</h1>
+<p class="sub">Ön ve arka yüz fotoğraflarını ekleyin; gerçek kart ölçüsünde (85,6 × 54 mm) A4 PDF hazırlanır. Fotoğraflar cihazınızdan çıkmaz.</p>
+<div class="grid">
+  <div class="slots" id="slots"></div>
+  <div class="side">
+    <fieldset><legend>Renk</legend>
+      <div class="seg"><label><input type="radio" name="color" value="bw" checked><span>Siyah-beyaz</span></label><label><input type="radio" name="color" value="color"><span>Renkli</span></label></div>
+    </fieldset>
+    <fieldset><legend>Konum</legend>
+      <div class="seg"><label><input type="radio" name="pos" value="top" checked><span>Sayfa üstü</span></label><label><input type="radio" name="pos" value="mid"><span>Ortada</span></label></div>
+    </fieldset>
+    <div class="page"><canvas id="page" width="420" height="594"></canvas></div>
+    <button class="go" id="go" disabled>PDF indir</button>
+    <p id="msg" role="status" aria-live="polite"></p>
+    <p class="note">Önizlemede kartı sürükleyerek konumlandırabilir, kaydırıcıyla yakınlaştırabilirsiniz.</p>
+  </div>
+</div>
+</main>
+<script>
+(function(){
+var CW=85.6,CH=54,GAP=14,PW=210,PH=297;
+var names=["Ön yüz","Arka yüz"];
+var slots=names.map(function(n){return {name:n,img:null,rot:0,zoom:1,ox:0,oy:0}});
+var $=function(id){return document.getElementById(id)};
+var msg=$("msg"),go=$("go"),pageCv=$("page");
+function val(n){return document.querySelector('input[name="'+n+'"]:checked').value}
+
+function draw(s,cv,bw){
+  var w=cv.width,h=cv.height,c=cv.getContext("2d");
+  c.fillStyle="#fff";c.fillRect(0,0,w,h);
+  if(!s.img)return;
+  var odd=s.rot%2,nw=s.img.naturalWidth,nh=s.img.naturalHeight;
+  var iw=odd?nh:nw,ih=odd?nw:nh;
+  var sc=Math.max(w/iw,h/ih)*s.zoom;
+  c.save();c.translate(w/2+s.ox*w,h/2+s.oy*h);c.rotate(s.rot*Math.PI/2);c.scale(sc,sc);
+  c.drawImage(s.img,-nw/2,-nh/2);c.restore();
+  if(bw){
+    var d=c.getImageData(0,0,w,h),p=d.data;
+    for(var i=0;i<p.length;i+=4){
+      var g=.299*p[i]+.587*p[i+1]+.114*p[i+2];
+      g=(g-128)*1.15+136;g=g<0?0:g>255?255:g;
+      p[i]=p[i+1]=p[i+2]=g;
+    }
+    c.putImageData(d,0,0);
+  }
+}
+function topMM(){return val("pos")==="top"?20:(PH-(2*CH+GAP))/2}
+function refresh(){
+  var bw=val("color")==="bw";
+  slots.forEach(function(s){draw(s,s.cv,bw)});
+  var c=pageCv.getContext("2d"),k=pageCv.width/PW;
+  c.fillStyle="#fff";c.fillRect(0,0,pageCv.width,pageCv.height);
+  slots.forEach(function(s,i){
+    var x=(PW-CW)/2*k,y=(topMM()+i*(CH+GAP))*k;
+    if(s.img){c.drawImage(s.cv,x,y,CW*k,CH*k)}
+    else{c.strokeStyle="#c9cfd8";c.setLineDash([4,4]);c.strokeRect(x,y,CW*k,CH*k);c.setLineDash([])}
+  });
+  go.disabled=!slots.some(function(s){return s.img});
+}
+
+slots.forEach(function(s,i){
+  var box=document.createElement("section");box.className="slot";
+  box.innerHTML='<h2>'+s.name+'</h2><div class="stage"><canvas width="520" height="328"></canvas><button type="button" class="pick">Fotoğraf seçin veya buraya bırakın</button></div>'+
+  '<div class="row"><label for="z'+i+'">Yakınlık</label><input id="z'+i+'" type="range" min="1" max="3" step="0.01" value="1" disabled><button type="button" class="rot" disabled>Döndür</button><button type="button" class="chg" disabled>Değiştir</button></div>'+
+  '<input type="file" accept="image/*" hidden>';
+  $("slots").appendChild(box);
+  var stage=box.querySelector(".stage"),file=box.querySelector("input[type=file]"),z=box.querySelector("input[type=range]"),rot=box.querySelector(".rot"),chg=box.querySelector(".chg");
+  s.cv=box.querySelector("canvas");
+  function open(){file.click()}
+  box.querySelector(".pick").onclick=open;chg.onclick=open;
+  function load(f){
+    if(!f||!/^image\//.test(f.type)){msg.textContent="Lütfen bir fotoğraf dosyası seçin.";return}
+    var url=URL.createObjectURL(f),im=new Image();
+    im.onload=function(){
+      s.img=im;s.rot=0;s.zoom=1;s.ox=0;s.oy=0;z.value=1;
+      z.disabled=rot.disabled=chg.disabled=false;stage.classList.add("has");msg.textContent="";refresh();
+    };
+    im.onerror=function(){msg.textContent="Bu dosya okunamadı. JPG veya PNG deneyin."};
+    im.src=url;
+  }
+  file.onchange=function(){load(file.files[0]);file.value=""};
+  stage.ondragover=function(e){e.preventDefault()};
+  stage.ondrop=function(e){e.preventDefault();load(e.dataTransfer.files[0])};
+  z.oninput=function(){s.zoom=parseFloat(z.value);refresh()};
+  rot.onclick=function(){s.rot=(s.rot+1)%4;s.ox=s.oy=0;refresh()};
+  var drag=null;
+  s.cv.onpointerdown=function(e){if(!s.img)return;drag={x:e.clientX,y:e.clientY,ox:s.ox,oy:s.oy};s.cv.setPointerCapture(e.pointerId)};
+  s.cv.onpointermove=function(e){
+    if(!drag)return;var r=s.cv.getBoundingClientRect();
+    s.ox=Math.max(-1,Math.min(1,drag.ox+(e.clientX-drag.x)/r.width));
+    s.oy=Math.max(-1,Math.min(1,drag.oy+(e.clientY-drag.y)/r.height));refresh();
+  };
+  s.cv.onpointerup=s.cv.onpointercancel=function(){drag=null};
+});
+document.querySelectorAll('input[name="color"],input[name="pos"]').forEach(function(r){r.onchange=refresh});
+
+function toBytes(cv){
+  return new Promise(function(res,rej){
+    cv.toBlob(function(b){if(!b)return rej(new Error("jpeg"));b.arrayBuffer().then(function(a){res(new Uint8Array(a))})},"image/jpeg",0.92);
+  });
+}
+async function buildPdf(){
+  var W=595.28,H=841.89,k=72/25.4,bw=val("color")==="bw",items=[];
+  for(var i=0;i<slots.length;i++){
+    var s=slots[i];if(!s.img)continue;
+    var cv=document.createElement("canvas");cv.width=1200;cv.height=757;
+    draw(s,cv,bw);
+    items.push({bytes:await toBytes(cv),w:cv.width,h:cv.height,i:i});
+  }
+  var enc=new TextEncoder(),chunks=[],len=0,offs=[];
+  function push(b){if(typeof b==="string")b=enc.encode(b);chunks.push(b);len+=b.length}
+  function obj(n,head,stream){
+    offs[n]=len;push(n+" 0 obj\n"+head);
+    if(stream){push("\nstream\n");push(stream);push("\nendstream")}
+    push("\nendobj\n");
+  }
+  var cw=CW*k,ch=CH*k,x=(W-cw)/2,content="";
+  items.forEach(function(it,j){
+    var y=H-(topMM()+it.i*(CH+GAP)+CH)*k;
+    content+="q "+cw.toFixed(2)+" 0 0 "+ch.toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2)+" cm /Im"+j+" Do Q\n";
+  });
+  var cbytes=enc.encode(content),xo=items.map(function(_,j){return "/Im"+j+" "+(5+j)+" 0 R"}).join(" ");
+  push("%PDF-1.4\n");
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2,"<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Resources << /XObject << "+xo+" >> >> /Contents 4 0 R >>");
+  obj(4,"<< /Length "+cbytes.length+" >>",cbytes);
+  items.forEach(function(it,j){
+    obj(5+j,"<< /Type /XObject /Subtype /Image /Width "+it.w+" /Height "+it.h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+it.bytes.length+" >>",it.bytes);
+  });
+  var n=5+items.length,xref=len;
+  var t="xref\n0 "+n+"\n0000000000 65535 f \n";
+  for(var m=1;m<n;m++)t+=String(offs[m]).padStart(10,"0")+" 00000 n \n";
+  t+="trailer\n<< /Size "+n+" /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+  push(t);
+  return new Blob(chunks,{type:"application/pdf"});
+}
+
+go.onclick=async function(){
+  go.disabled=true;msg.textContent="PDF hazırlanıyor…";
+  try{
+    var blob=await buildPdf();
+    var dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null;
+    if(dl){await dl.save({filename:"kimlik-fotokopisi.pdf",data:blob})}
+    else{var a=document.createElement("a"),u=URL.createObjectURL(blob);a.href=u;a.download="kimlik-fotokopisi.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},15000)}
+    msg.textContent="PDF kaydedildi.";
+  }catch(e){
+    msg.textContent=(e&&e.code==="declined")?"İndirme iptal edildi.":"PDF oluşturulamadı. Fotoğrafları yeniden ekleyip tekrar deneyin.";
+  }finally{refresh()}
+};
+refresh();
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){navigator.serviceWorker.register("sw.js").catch(function(){})}
+})();
+</script>
+</body>
+</html>
